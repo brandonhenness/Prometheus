@@ -15,7 +15,6 @@ services:
     restart: always
 
   backend:
-    # image: python:latest
     build:
       context: ../
       dockerfile: .docker/backend/Dockerfile
@@ -30,7 +29,6 @@ services:
       - database
 
   frontend:
-    # image: node:latest
     build:
       context: ../
       dockerfile: .docker/frontend/Dockerfile
