@@ -14,8 +14,6 @@ services:
 
   backend:
     image: docker/python:latest
-    build:
-      context: ./backend
     container_name: backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
@@ -27,8 +25,6 @@ services:
       - database
   frontend:
     image: docker/node:latest
-    build:
-      context: ./frontend
     container_name: frontend
     command: npm run dev
     ports:
