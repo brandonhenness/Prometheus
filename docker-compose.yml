@@ -1,0 +1,55 @@
+services:
+  # app:
+  #   entrypoint:
+  #   - sleep
+  #   - infinity
+  #   image: docker/dev-environments-javascript:stable-1
+  #   init: true
+  #   volumes:
+  #   - type: bind
+  #     source: /var/run/docker.sock
+  #     target: /var/run/docker.sock
+
+  database:
+    image: postgres:16.1
+    container_name: database
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    restart: always
+    
+  backend:
+    image: docker/python:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    depends_on:
+      - database
+
+  frontend:
+    image: docker/node:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    container_name: frontend
+    command: npm run dev
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
+    depends_on:
+      - backend
+    
