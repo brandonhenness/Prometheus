@@ -11,6 +11,7 @@ services:
     volumes:
       - ./database:/var/lib/postgresql/data
     restart: always
+
   backend:
     image: docker/python:latest
     build:
