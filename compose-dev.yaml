@@ -11,7 +11,7 @@ services:
     volumes:
       - ./database:/var/lib/postgresql/data
     restart: always
-
+    
   backend:
     image: docker/python:latest
     container_name: backend
@@ -23,6 +23,7 @@ services:
     working_dir: /app
     depends_on:
       - database
+
   frontend:
     image: docker/node:latest
     container_name: frontend
