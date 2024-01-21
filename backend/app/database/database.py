@@ -1,14 +1,32 @@
-import os
+import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import SQLAlchemyError, DBAPIError
+from sqlalchemy.exc import SQLAlchemyError, DBAPIError, OperationalError
 from app.models import Base
 from typing import Iterator
 from dotenv import load_dotenv
+from pydantic import BaseSettings, ValidationError
+import random
 import logging
 
 # Load environment variables from .env file
 load_dotenv()
+
+
+class DatabaseConfig(BaseSettings):
+    database_driver: str
+    database_server: str
+    database_name: str
+    database_username: str
+    database_password: str
+    development_mode: bool = False
+    pool_size: int = 5
+    max_overflow: int = 10
+    pool_recycle: int = 3600
+    pool_timeout: int = 30
+
+    class Config:
+        env_prefix = "DATABASE_"
 
 
 class Database:
@@ -24,29 +42,21 @@ class Database:
         SessionLocal (sessionmaker): A sessionmaker instance configured for AsyncSession.
     """
 
-    def __init__(self):
+    def __init__(self, config: DatabaseConfig):
         """Initializes the Database."""
         try:
-            driver = os.getenv("DATABASE_DRIVER")
-            server = os.getenv("DATABASE_SERVER")
-            db_name = os.getenv("DATABASE_NAME")
-            username = os.getenv("DATABASE_USERNAME")
-            password = os.getenv("DATABASE_PASSWORD")
-            self.uri = f"{driver}://{username}:{password}@{server}/{db_name}"
-
-            echo = os.getenv("DEVELOPMENT_MODE") == "True"
+            self.uri = f"{config.database_driver}://{config.database_username}:{config.database_password}@{config.database_server}/{config.database_name}"
             self.engine = create_async_engine(
                 self.uri,
-                echo=echo,
-                pool_size=5,
-                max_overflow=10,
+                echo=config.development_mode,
+                pool_size=config.pool_size,
+                max_overflow=config.max_overflow,
+                pool_recycle=config.pool_recycle,
+                pool_timeout=config.pool_timeout,
             )
             self.SessionLocal = sessionmaker(
                 bind=self.engine, class_=AsyncSession, expire_on_commit=False
             )
-        except ValueError as val_err:
-            logging.error(f"Configuration error: {val_err}")
-            raise
         except Exception as e:
             logging.error(f"Error initializing database engine: {e}")
             raise
@@ -73,6 +83,38 @@ class Database:
             logging.error(f"Unexpected error during database initialization: {e}")
             raise
 
+    async def _execute_with_retry(
+        self, operation, max_retries=3, initial_delay=1, backoff_factor=2
+    ):
+        """Executes a database operation with exponential backoff retries.
+
+        Args:
+            operation: The asynchronous database operation to perform.
+            max_retries (int): Maximum number of retries.
+            initial_delay (int): Initial delay between retries in seconds.
+            backoff_factor (int): Factor by which to multiply the delay for each retry.
+
+        Returns:
+            The result of the operation, if successful.
+
+        Raises:
+            Exception: If the operation fails after the maximum retries.
+        """
+        attempt = 0
+        delay = initial_delay
+        while attempt < max_retries:
+            try:
+                return await operation()
+            except OperationalError as e:
+                attempt += 1
+                logging.warning(
+                    f"Database operation failed, attempt {attempt}/{max_retries}: {e}"
+                )
+                if attempt >= max_retries:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= backoff_factor + random.uniform(0, 0.1)  # Adding jitter
+
     async def get_session(self) -> Iterator[AsyncSession]:
         """Provides a context-managed async session for database operations.
 
@@ -83,22 +125,20 @@ class Database:
             async with db.get_session() as session:
                 # Perform database operations with the session
         """
-        try:
+
+        async def create_session():
             async with self.SessionLocal() as session:
                 yield session
-        except DBAPIError as db_err:
-            # Handle database connection issues
-            logging.error(f"Database connection error in session: {db_err}")
-            raise
-        except SQLAlchemyError as sql_err:
-            # Handle SQLAlchemy related issues
-            logging.error(f"SQLAlchemy error in session: {sql_err}")
-            raise
-        except Exception as e:
-            # Handle other unexpected issues
-            logging.error(f"Unexpected error in session: {e}")
-            raise
 
+        return await self._execute_with_retry(create_session)
+
+
+# Read and validate configuration
+try:
+    config = DatabaseConfig()
+except ValidationError as e:
+    logging.error(f"Configuration validation error: {e}")
+    raise
 
 # Creating a Database instance
 db = Database()
