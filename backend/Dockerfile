@@ -4,11 +4,14 @@ FROM python:3.12.4-slim AS base
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . .
+# Copy requirements file into the container
+COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY app /app
 
 # Development stage
 FROM base AS development

@@ -4,15 +4,15 @@ services:
       context: backend
       target: development
     secrets:
-      - db-password
+      - database-password
     depends_on:
-      - db
+      - database
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@db:5432/example
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@database:5432/example
     command:
       [
         "uvicorn",
-        "main:app",
+        "app.main:app",
         "--host",
         "0.0.0.0",
         "--port",
@@ -20,7 +20,7 @@ services:
         "--reload"
       ]
   database:
-    image: postgres
+    image: postgres:latest
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -33,6 +33,7 @@ services:
       - database-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=example
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD_FILE=/run/secrets/database-password
     expose:
       - 5432
@@ -49,7 +50,7 @@ services:
       - 3000:3000
     environment:
       - NODE_ENV=development
-    command: ["npm", "run", "dev"]
+    command: [ "npm", "run", "dev" ]
     volumes:
       - ./frontend:/app
     depends_on:

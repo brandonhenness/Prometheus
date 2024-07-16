@@ -1,8 +1,10 @@
+version: "3.7"
 services:
   backend:
-    build: backend
+    build:
+      context: backend
     secrets:
-      - datbase-password
+      - database-password
     depends_on:
       - database
     environment:
@@ -10,12 +12,11 @@ services:
     command:
       [
         "uvicorn",
-        "main:app",
+        "app.main:app",
         "--host",
         "0.0.0.0",
         "--port",
-        "8000",
-        "--reload"
+        "8000"
       ]
   database:
     image: postgres:latest
@@ -33,17 +34,17 @@ services:
   proxy:
     build: proxy
     ports:
-      - 8080:80
+      - 80:80
     depends_on:
       - backend
   frontend:
     build:
       context: frontend
     ports:
-      - 3000:3000
+      - 80:80
     environment:
-      - NODE_ENV=development
-    command: [ "npm", "run", "dev" ]
+      - NODE_ENV=production
+    command: [ "npm", "run", "start" ]
     volumes:
       - ./frontend:/app
     depends_on:
