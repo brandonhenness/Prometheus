@@ -1,6 +1,5 @@
-# Use the official lightweight Node.js image.
-# https://hub.docker.com/_/node
-FROM node:18
+# Use the latest Node.js image
+FROM node:latest
 
 # Set the working directory in the container
 WORKDIR /app
