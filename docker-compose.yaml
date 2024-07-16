@@ -2,11 +2,11 @@ services:
   backend:
     build: backend
     secrets:
-      - database-password
+      - datbase-password
     depends_on:
       - database
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@database:5432/example
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@database:5432/example
     command:
       [
         "uvicorn",
