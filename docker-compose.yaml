@@ -1,14 +1,11 @@
 version: "3.7"
 services:
   backend:
-    build:
-      context: backend
-    secrets:
-      - database-password
+    build: backend
     depends_on:
       - database
     environment:
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@database:5432/example
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@database:5432/example
     command:
       [
         "uvicorn",
@@ -21,27 +18,25 @@ services:
   database:
     image: postgres:latest
     restart: always
-    secrets:
-      - database-password
     volumes:
       - database-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=example
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD_FILE=/run/secrets/database-password
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     expose:
       - 5432
   proxy:
     build: proxy
     ports:
-      - 80:80
+      - 8080:80
     depends_on:
       - backend
   frontend:
     build:
       context: frontend
     ports:
-      - 80:80
+      - 3000:3000
     environment:
       - NODE_ENV=production
     command: [ "npm", "run", "start" ]
@@ -51,6 +46,3 @@ services:
       - backend
 volumes:
   database-data:
-secrets:
-  database-password:
-    file: database/password.txt

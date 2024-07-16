@@ -3,12 +3,10 @@ services:
     build:
       context: backend
       target: development
-    secrets:
-      - database-password
     depends_on:
       - database
     environment:
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@database:5432/example
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@database:5432/example
     command:
       [
         "uvicorn",
@@ -27,14 +25,12 @@ services:
       interval: 3s
       retries: 5
       start_period: 30s
-    secrets:
-      - database-password
     volumes:
       - database-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=example
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD_FILE=/run/secrets/database-password
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     expose:
       - 5432
   proxy:
@@ -57,6 +53,3 @@ services:
       - backend
 volumes:
   database-data:
-secrets:
-  database-password:
-    file: database/password.txt
