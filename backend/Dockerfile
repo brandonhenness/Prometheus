@@ -1,33 +1,24 @@
-# Use an official Python runtime as a parent image
-FROM python:3.12.4-slim AS base
+# syntax = docker/dockerfile:1.4
 
-# Set the working directory in the container
+# Base image
+FROM tiangolo/uvicorn-gunicorn:python3.11 AS base
+
 WORKDIR /app
 
-# Copy requirements file into the container
-COPY requirements.txt .
+# Install dependencies
+COPY requirements.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy application code
+COPY ./app ./app
 
-# Copy the current directory contents into the container at /app
-COPY app /app
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Development stage
-FROM base AS development
-# Install additional development dependencies if needed
-RUN pip install debugpy
-
-# Set the command to run the development server with --reload
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
-# Production stage
-FROM python:3.12.4-slim AS production
-WORKDIR /app
-COPY --from=base /app /app
-
-# Expose the port the app runs on
+# Expose the application port
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Set the entrypoint command for development with live reload
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

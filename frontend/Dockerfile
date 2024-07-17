@@ -1,24 +1,35 @@
-# Use the latest Node.js image
-FROM node:latest
-
-# Set the working directory in the container
+FROM node:18-alpine as base
+RUN apk add --no-cache g++ make py3-pip libc6-compat
 WORKDIR /app
-
-# Copy package.json and package-lock.json (or yarn.lock) to the work directory
-COPY package.json ./
-COPY package-lock.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy the app code to the container
-COPY . .
-
-# Verify that next is installed correctly
-RUN npx next --version
-
-# Make port 3000 available to the world outside this container
+COPY package*.json ./
 EXPOSE 3000
 
-# Define the command to run the app
-CMD ["npm", "run", "dev"]
+FROM base as builder
+WORKDIR /app
+COPY . .
+RUN npm run build
+
+
+FROM base as production
+WORKDIR /app
+
+ENV NODE_ENV=production
+RUN npm ci
+
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+USER nextjs
+
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
+
+CMD npm start
+
+FROM base as dev
+ENV NODE_ENV=development
+RUN npm install 
+COPY . .
+CMD npm run dev
