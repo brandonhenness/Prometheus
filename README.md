@@ -52,7 +52,7 @@ Prometheus aims to revolutionize education in correctional facilities, fostering
 
 ## License
 
-ClipboardSync is licensed under the [GNU General Public License v3.0](LICENSE).
+Prometheus is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ---
 
