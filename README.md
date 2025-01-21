@@ -1,5 +1,8 @@
 # Prometheus
 
+> ## ⚠️ Important Notice
+> This project is currently not in a working state and is under active development. Updates and fixes are being implemented to bring the app to a functional state. Please check back for updates or contribute to its progress.
+
 In ancient Greek mythology, Prometheus was a Titan revered for his cunning and foresight. Defying the Olympian gods, he bestowed upon humanity a gift of immeasurable value – fire. This was not just literal fire, but a symbol of technology, knowledge, and the spark of civilization itself. Prometheus, whose name means 'forethought', was celebrated as a champion of mankind, empowering them with the tools for progress and enlightenment, much to the chagrin of Zeus and the other gods who wished to keep humans in a state of dependency and ignorance.
 
 ## Enlightenment Through Education
@@ -57,3 +60,4 @@ Prometheus is licensed under the [GNU General Public License v3.0](LICENSE).
 ---
 
 Developed with ❤️ by [Brandon Henness](https://github.com/brandonhenness).
+
