@@ -1,24 +1,61 @@
-from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi_kerberos import KerberosMiddleware, requires_auth
+from typing import Union
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.responses import JSONResponse
+from requests_kerberos import HTTPKerberosAuth, OPTIONAL
+import kerberos
 
+security = HTTPBearer()
 app = FastAPI()
 
-app.add_middleware(KerberosMiddleware)
+class KerberosAuthMiddleware:
+    def __init__(self, app):
+        self.app = app
+        
+    async def __call__(self, request: Request, call_next):
+        auth_header = request.headers.get("Authorization")
+        if auth_header:
+            try:
+                result = kerberos.authGSSServerInit("HTTP@your.domain.com")
+                kerberos.authGSSServerStep(result, auth_header.split()[1])
+                principal = kerberos.authGSSServerUserName(result)
+                request.state.principal = principal
+                kerberos.authGSSServerClean(result)
+            except kerberos.GSSError as e:
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"detail": "Kerberos authentication failed"},
+                    headers={"WWW-Authenticate": "Negotiate"},
+                )
+        else:
+            request.state.principal = None
+            
+        response = await call_next(request)
+        return response
 
+app.add_middleware(KerberosAuthMiddleware)
 
-@app.get("/login", dependencies=[Depends(requires_auth)])
-async def login(request: Request):
-    # Extract user info from the request
-    user_info = request.state.principal
-    return JSONResponse(content={"message": f"Authenticated as {user_info}"})
+def requires_auth(request: Request):
+    if not request.state.principal:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Negotiate"},
+        )
+    return request.state.principal
 
+# Your existing routes with modified dependencies
+@app.get("/login")
+async def login(principal: str = Depends(requires_auth)):
+    return JSONResponse(content={"message": f"Authenticated as {principal}"})
 
-@app.get("/user", dependencies=[Depends(requires_auth)])
-async def get_user(request: Request):
-    user_info = request.state.principal
-    # You can also query AD for additional user information if needed
-    return JSONResponse(content={"username": user_info})
+@app.get("/user")
+async def get_user(principal: str = Depends(requires_auth)):
+    return JSONResponse(content={"username": principal})
+
+@app.get("/protected")
+async def protected_route(principal: str = Depends(requires_auth)):
+    return JSONResponse(content={"message": f"Authenticated as {principal}"})
 
 
 @app.get("/")
@@ -44,13 +81,6 @@ async def health_check():
 @app.get("/public")
 async def public_route():
     return JSONResponse(content={"message": "This is a public route."})
-
-
-@app.get("/protected", dependencies=[Depends(requires_auth)])
-async def protected_route(request: Request):
-    return JSONResponse(
-        content={"message": f"Authenticated as {request.state.principal}"}
-    )
 
 
 @app.get("/admin", dependencies=[Depends(requires_auth)])

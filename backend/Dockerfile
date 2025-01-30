@@ -1,24 +1,20 @@
-# syntax = docker/dockerfile:1.4
-
-# Base image
-FROM tiangolo/uvicorn-gunicorn:python3.11 AS base
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt ./
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+# Install system dependencies for Kerberos
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    krb5-user \
+    libkrb5-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy application code
-COPY ./app ./app
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --upgrade -r requirements.txt
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+COPY ./app /app/app
 
-# Expose the application port
-EXPOSE 8000
-
-# Set the entrypoint command for development with live reload
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
