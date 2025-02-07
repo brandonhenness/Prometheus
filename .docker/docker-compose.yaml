@@ -13,6 +13,8 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
+      - ENVIRONMENT=${ENVIRONMENT}
+      - LOG_LEVEL=${LOG_LEVEL}
     networks:
       - prometheus-net
     restart: unless-stopped
@@ -21,24 +23,35 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    hostname: ${KRB_HOST}
     ports:
       - "8000:8000"
     volumes:
       - ../backend:/app
       - /app/__pycache__
+      - ../krb5.keytab:/etc/krb5.keytab:ro
+      - ../krb5.conf:/etc/krb5.conf:ro
     environment:
-      - KRB5_KTNAME=/app/krb5.keytab
+      - KRB5_KTNAME=${KRB_KTNAME}
+      - KRB5_CONFIG=${KRB5_CONFIG}
+      - KRB5_TRACE=${KRB5_TRACE}
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=${DATABASE_URL}
+      - SERVICE_PRINCIPAL=${KRB_SERVICE}/${KRB_HOST}@${KRB_REALM}
+      - ENVIRONMENT=${ENVIRONMENT}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LDAP_SERVER=${LDAP_SERVER}
+      - LDAP_USER=${LDAP_USER}
+      - LDAP_PASSWORD=${LDAP_PASSWORD}
     networks:
       - prometheus-net
     depends_on:
       - postgres
 
   postgres:
-    image: postgres:15
+    image: postgres:17
     volumes:
-      - ../infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -62,20 +75,24 @@ services:
       - postgres
 
   nginx:
-    image: nginx:alpine
-    volumes:
-      - ../infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      - prometheus-net
+    build:
+      context: ../nginx
+      dockerfile: Dockerfile
+    environment:
+      - FRONTEND_HOST_NAME=${FRONTEND_HOST_NAME}
+      - BACKEND_HOST_NAME=${BACKEND_HOST_NAME}
+      - PGADMIN_HOST_NAME=${PGADMIN_HOST_NAME}
     depends_on:
       - frontend
       - backend
+      - pgadmin
     ports:
       - "80:80"
+    networks:
+      - prometheus-net
 
 volumes:
   postgres-data:
-
 
 networks:
   prometheus-net:
