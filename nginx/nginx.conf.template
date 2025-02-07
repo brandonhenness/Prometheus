@@ -1,0 +1,85 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Define upstreams for each service
+    upstream frontend {
+        server frontend:3000;
+    }
+
+    upstream backend {
+        server backend:8000;
+    }
+
+    upstream pgadmin {
+        server pgadmin:80;
+    }
+
+    # Main Production Frontend
+    server {
+        listen 80;
+        server_name ${FRONTEND_HOST_NAME};
+
+        location / {
+            proxy_pass http://frontend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            
+            # WebSocket support
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+    }
+
+    # Production Backend API
+    server {
+        listen 80;
+        server_name ${BACKEND_HOST_NAME};
+
+        location / {
+            proxy_pass http://backend;
+            # Force the Host header to be the fully qualified domain name that matches your keytab and SPN.
+            proxy_set_header Host ${BACKEND_HOST_NAME};
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Authorization $http_authorization;
+        }
+        
+        # Optional: explicitly forward documentation endpoints.
+        location /docs {
+            proxy_pass http://backend/docs;
+        }
+        
+        location /redoc {
+            proxy_pass http://backend/redoc;
+        }
+    }
+
+    # PGAdmin Interface
+    server {
+        listen 80;
+        server_name ${PGADMIN_HOST_NAME};
+
+        location / {
+            proxy_pass http://pgadmin;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_cookie_path / /;
+        }
+    }
+
+    # Global Proxy Settings
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300;
+    proxy_connect_timeout 300;
+    proxy_send_timeout 300;
+    
+    # Required for Kerberos SPNEGO authentication
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+}

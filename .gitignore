@@ -298,4 +298,3 @@ cython_debug/
 
 # Kerberos
 krb5.keytab
-krb5.keytab
