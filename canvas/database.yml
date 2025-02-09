@@ -1,0 +1,8 @@
+production:
+  adapter: postgresql
+  encoding: utf8
+  database: <%= ENV['CANVAS_PRODUCTION_DB'] %>
+  host: <%= ENV['CANVAS_DB_HOST'] %>
+  username: <%= ENV['CANVAS_DB_USERNAME'] %>
+  password: <%= ENV['CANVAS_DB_PASSWORD'] %>
+  timeout: 5000

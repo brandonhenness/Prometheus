@@ -1,0 +1,5 @@
+production:
+  session_store: <%= ENV['CANVAS_SESSION_STORE'] || 'encrypted_cookie_store' %>
+  expire_after: <%= ENV['CANVAS_SESSION_EXPIRE_AFTER'] || 86400 %>
+  secure: <%= ENV['CANVAS_SESSION_SECURE'] || true %>
+  expire_remember_me_after: <%= ENV['CANVAS_SESSION_EXPIRE_REMEMBER_ME_AFTER'] || 2592000 %>
