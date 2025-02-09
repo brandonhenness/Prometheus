@@ -27,7 +27,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ../backend:/app
+      - ../backend/app:/app/app
+      - ../backend/static/swagger-ui-dark.css:/app/static/swagger-ui-dark.css:ro
       - /app/__pycache__
       - ../krb5.keytab:/etc/krb5.keytab:ro
       - ../krb5.conf:/etc/krb5.conf:ro
