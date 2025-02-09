@@ -1,0 +1,3 @@
+production:
+  encryption_key: <%= ENV['CANVAS_ENCRYPTION_KEY'] %>
+  lti_iss: <%= ENV['CANVAS_LTI_ISS'] %>

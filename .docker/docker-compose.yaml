@@ -48,6 +48,67 @@ services:
     depends_on:
       - postgres
 
+  canvas:
+    build:
+      context: "https://github.com/instructure/canvas-lms.git#prod"
+      dockerfile: Dockerfile.production
+    # hostname: ${CANVAS_HOST_NAME}
+    entrypoint: ["/usr/src/app/entrypoint.sh"]
+    command: ["bundle", "exec", "passenger", "start", "--port", "80", "--environment", "production"]
+    volumes:
+      - ../canvas/entrypoint.sh:/usr/src/app/entrypoint.sh:ro
+      - ../canvas/database.yml:/usr/src/app/config/database.yml:ro
+      - ../canvas/security.yml:/usr/src/app/config/security.yml:ro
+      - ../canvas/domain.yml:/usr/src/app/config/domain.yml:ro
+      - ../canvas/session_store.yml:/usr/src/app/config/session_store.yml:ro
+      - ../canvas/cache_store.yml:/usr/src/app/config/cache_store.yml:ro
+      - ../canvas/redis.yml:/usr/src/app/config/redis.yml:ro
+    environment:
+      - CANVAS_PRODUCTION_DB=${CANVAS_PRODUCTION_DB}
+      - CANVAS_DB_HOST=${CANVAS_DB_HOST}
+      - CANVAS_DB_USERNAME=${CANVAS_DB_USERNAME}
+      - CANVAS_DB_PASSWORD=${CANVAS_DB_PASSWORD}
+      - CANVAS_ENCRYPTION_KEY=${CANVAS_ENCRYPTION_KEY}
+      - CANVAS_LTI_ISS=${CANVAS_LTI_ISS}
+      - CANVAS_DOMAIN=${CANVAS_DOMAIN}
+      - CANVAS_SSL_ENABLED=${CANVAS_SSL_ENABLED}
+      - CANVAS_LMS_ADMIN_EMAIL=${CANVAS_LMS_ADMIN_EMAIL}
+      - CANVAS_LMS_ADMIN_PASSWORD=${CANVAS_LMS_ADMIN_PASSWORD}
+      - CANVAS_LMS_ACCOUNT_NAME=${CANVAS_LMS_ACCOUNT_NAME}
+      - CANVAS_LMS_STATS_COLLECTION=${CANVAS_LMS_STATS_COLLECTION}
+      - CANVAS_SESSION_STORE=${CANVAS_SESSION_STORE}
+      - CANVAS_SESSION_EXPIRE_AFTER=${CANVAS_SESSION_EXPIRE_AFTER}
+      - CANVAS_SESSION_SECURE=${CANVAS_SESSION_SECURE}
+      - CANVAS_SESSION_EXPIRE_REMEMBER_ME_AFTER=${CANVAS_SESSION_EXPIRE_REMEMBER_ME_AFTER}
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8080:80"
+    networks:
+      - prometheus-net
+
+  redis:
+    image: redis:latest
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - prometheus-net
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      - postgres
+    ports:
+      - "5050:80"
+    networks:
+      - prometheus-net
+
   postgres:
     image: postgres:17
     volumes:
@@ -57,22 +118,10 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-    networks:
-      - prometheus-net
     ports:
       - "5432:5432"
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
     networks:
       - prometheus-net
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
 
   nginx:
     build:
@@ -82,10 +131,12 @@ services:
       - FRONTEND_HOST_NAME=${FRONTEND_HOST_NAME}
       - BACKEND_HOST_NAME=${BACKEND_HOST_NAME}
       - PGADMIN_HOST_NAME=${PGADMIN_HOST_NAME}
+      - CANVAS_HOST_NAME=${CANVAS_HOST_NAME}
     depends_on:
       - frontend
       - backend
       - pgadmin
+      - canvas
     ports:
       - "80:80"
     networks:
@@ -93,6 +144,9 @@ services:
 
 volumes:
   postgres-data:
+  prometheus-data:
+  canvas-data:
+  redis-data:
 
 networks:
   prometheus-net:
