@@ -18,15 +18,21 @@ http {
 
     # Main Production Frontend
     server {
+        #listen 443 ssl;
         listen 80;
         server_name ${FRONTEND_HOST_NAME};
+
+        #ssl_certificate     /etc/nginx/certs/server.crt;
+        #ssl_certificate_key /etc/nginx/certs/server.key;
+        #ssl_protocols       TLSv1.2 TLSv1.3;
+        #ssl_ciphers         HIGH:!aNULL:!MD5;
 
         location / {
             proxy_pass http://frontend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            
+
             # WebSocket support
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
@@ -36,12 +42,17 @@ http {
 
     # Production Backend API
     server {
+        #listen 443 ssl;
         listen 80;
         server_name ${BACKEND_HOST_NAME};
 
+        #ssl_certificate     /etc/nginx/certs/server.crt;
+        #ssl_certificate_key /etc/nginx/certs/server.key;
+        #ssl_protocols       TLSv1.2 TLSv1.3;
+        #ssl_ciphers         HIGH:!aNULL:!MD5;
+
         location / {
             proxy_pass http://backend;
-            # Force the Host header to be the fully qualified domain name that matches your keytab and SPN.
             proxy_set_header Host ${BACKEND_HOST_NAME};
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -59,10 +70,16 @@ http {
         }
     }
 
-        # In your nginx.conf (or as an included file)
+    # Canvas Service
     server {
+        #listen 443 ssl;
         listen 80;
         server_name ${CANVAS_HOST_NAME};
+
+        #ssl_certificate     /etc/nginx/certs/server.crt;
+        #ssl_certificate_key /etc/nginx/certs/server.key;
+        #ssl_protocols       TLSv1.2 TLSv1.3;
+        #ssl_ciphers         HIGH:!aNULL:!MD5;
 
         location / {
             # Proxy requests to the Canvas container (using Docker DNS)
@@ -76,8 +93,14 @@ http {
 
     # PGAdmin Interface
     server {
+        #listen 443 ssl;
         listen 80;
         server_name ${PGADMIN_HOST_NAME};
+
+        #ssl_certificate     /etc/nginx/certs/server.crt;
+        #ssl_certificate_key /etc/nginx/certs/server.key;
+        #ssl_protocols       TLSv1.2 TLSv1.3;
+        #ssl_ciphers         HIGH:!aNULL:!MD5;
 
         location / {
             proxy_pass http://pgadmin;
@@ -87,6 +110,13 @@ http {
             proxy_cookie_path / /;
         }
     }
+
+    # HTTP to HTTPS redirect for all services
+    #server {
+    #    listen 80;
+    #    server_name ${FRONTEND_HOST_NAME} ${BACKEND_HOST_NAME} ${CANVAS_HOST_NAME} ${PGADMIN_HOST_NAME};
+    #    return 301 https://$host$request_uri;
+    #}
 
     # Global Proxy Settings
     proxy_set_header X-Forwarded-Proto $scheme;

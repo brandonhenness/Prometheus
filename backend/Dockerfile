@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     krb5-user \
     libkrb5-dev \
     curl \
+    xmlsec1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -25,4 +26,5 @@ RUN mkdir -p static && \
 # Copy the FastAPI application code
 COPY ./app /app/app
 
-CMD ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000", "--access-log"]
+

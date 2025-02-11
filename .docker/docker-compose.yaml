@@ -32,6 +32,8 @@ services:
       - /app/__pycache__
       - ../krb5.keytab:/etc/krb5.keytab:ro
       - ../krb5.conf:/etc/krb5.conf:ro
+      - ../idp-cert.pem:/etc/saml/idp-cert.pem:ro
+      - ../idp-key.pem:/etc/saml/idp-key.pem:ro
     environment:
       - KRB5_KTNAME=${KRB_KTNAME}
       - KRB5_CONFIG=${KRB5_CONFIG}
@@ -128,18 +130,23 @@ services:
     build:
       context: ../nginx
       dockerfile: Dockerfile
+    volumes:
+      - ..server.crt:/etc/nginx/certs/server.crt
+      - ..server.key:/etc/nginx/certs/server.key
     environment:
       - FRONTEND_HOST_NAME=${FRONTEND_HOST_NAME}
       - BACKEND_HOST_NAME=${BACKEND_HOST_NAME}
       - PGADMIN_HOST_NAME=${PGADMIN_HOST_NAME}
       - CANVAS_HOST_NAME=${CANVAS_HOST_NAME}
-    depends_on:
-      - frontend
-      - backend
-      - pgadmin
-      - canvas
+    # depends_on:
+    #   - frontend
+    #   - backend
+    #   - pgadmin
+    #   - canvas
     ports:
       - "80:80"
+      - "443:443"
+    restart: unless-stopped
     networks:
       - prometheus-net
 
