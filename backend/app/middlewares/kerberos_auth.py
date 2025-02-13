@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 class KerberosAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         logger.debug("Starting Kerberos authentication middleware dispatch.")
-        request.state.principal = None
+
+        request.state.auth_info = {}
 
         auth_header = request.headers.get("Authorization")
         logger.debug(f"Authorization header: {auth_header}")
@@ -41,9 +42,24 @@ class KerberosAuthMiddleware(BaseHTTPMiddleware):
                 logger.debug(f"SecurityContext.step() returned: {out_token}")
 
                 if sec_context.complete:
-                    principal = str(sec_context.initiator_name)
-                    request.state.principal = principal
-                    logger.info(f"Authentication complete. Principal: {principal}")
+                    # Get the raw UPN (e.g., john.doe@example.com)
+                    upn = str(sec_context.initiator_name).lower()
+
+                    # Compute WindowsDomainQualifiedName:
+                    if "@" in upn:
+                        username, domain = upn.split("@", 1)
+                        # Optionally, you can use an environment variable for the short domain:
+                        short_domain = os.getenv("KRB_WINDOWS_DOMAIN", domain.split('.')[0])
+                        wdqn = f"{short_domain.upper()}\\{username}"
+                    else:
+                        wdqn = upn
+
+                    # Store all values in the auth_info dictionary
+                    request.state.auth_info = {
+                        "upn": upn,
+                        "wdqn": wdqn,
+                    }
+                    logger.info(f"Authentication complete. Auth info: {request.state.auth_info}")
                 else:
                     out_token_b64 = (
                         base64.b64encode(out_token).decode("ascii") if out_token else ""

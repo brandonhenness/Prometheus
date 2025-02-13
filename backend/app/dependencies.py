@@ -10,20 +10,22 @@ from fastapi import Request, HTTPException, status
 
 logger = logging.getLogger(__name__)
 
-def requires_auth(request: Request) -> str:
+def requires_auth(request: Request) -> dict:
     """
-    A FastAPI dependency that ensures the request is authenticated
-    via Kerberos. Raises HTTP 401 if not authenticated.
+    FastAPI dependency that ensures the request is authenticated via Kerberos.
+    Raises HTTP 401 if not authenticated.
+    Returns the full authentication dictionary with keys like "upn" and "wdqn".
     """
-    if not request.state.principal:
-        logger.warning("Authentication required but principal is missing.")
+    auth_info = getattr(request.state, "auth_info", None)
+    if not auth_info:
+        logger.warning("Authentication required but auth_info is missing.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Negotiate"},
         )
-    logger.debug(f"Request authenticated as: {request.state.principal}")
-    return request.state.principal
+    logger.debug(f"Request authenticated with: {auth_info}")
+    return auth_info
 
 
 def get_user_permissions_from_ad(user_info: str):

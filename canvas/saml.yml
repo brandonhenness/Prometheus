@@ -1,0 +1,27 @@
+# In order to consume encrypted SAML assertions, you'll need to create
+# a public/private keypair:
+# 
+# openssl req -new -newkey rsa:2048 -days 730 -nodes -x509 -keyout samlkey.pem -out samlcert.pem
+
+production: #TODO: Update this to use environment variables
+  entity_id: "http://api.prometheus.osn.wa.gov/saml/metadata"
+  tech_contact_name: "Administrator"
+  tech_contact_email: "admin@osn.wa.gov"
+  encryption:
+    private_key: /etc/ssl/private/canvas-saml.key
+    certificate: /etc/ssl/certs/canvas-saml.crt
+  
+# development:
+#   entity_id: "http://www.your-domain.com/saml2"
+#   tech_contact_name: "Administrator"
+#   tech_contact_email: "info@your-domain.com"
+#   encryption:
+#     private_key: /path/to/samlkey.pem
+#     certificate: /path/to/samlcert.pem
+#     additional_private_keys:
+#       - /path/to/oldsamlkey.pem
+     
+# test:
+#   entity_id: "http://www.your-domain.com/saml2"
+#   tech_contact_name: "Administrator"
+#   tech_contact_email: "info@your-domain.com"

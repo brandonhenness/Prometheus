@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.middlewares.kerberos_auth import KerberosAuthMiddleware
@@ -53,6 +54,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(KerberosAuthMiddleware)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.prometheus.osn.wa.gov", "canvas.prometheus.osn.wa.gov"]) #TODO: Move to config
 
 app.include_router(auth_router, tags=["auth"])
 app.include_router(users_router, tags=["users"])
