@@ -46,7 +46,8 @@ export const CollapseItems = ({ icon, items, title }: Props) => {
           </div>
         </AccordionItem>
       </Accordion>
-      {/* <Accordion
+      {
+      /* <Accordion
         title={
           <div
             className="flex items-center justify-between w-full py-5 px-7 rounded-8 transition-all duration-150 ease-in-out cursor-pointer hover:bg-accents2 active:scale-98"
@@ -133,7 +134,8 @@ export const CollapseItems = ({ icon, items, title }: Props) => {
             </span>
           </div>
         ))}
-      </Accordion> */}
+      </Accordion> */
+      }
     </div>
   );
 };
