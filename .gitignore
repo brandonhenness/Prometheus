@@ -296,5 +296,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Kerberos
-krb5.keytab
+# Certificate Files
+*.keytab
+*.pem
+*.key
+*.csr
+*.crt
+*.pfx
+/certs/*
