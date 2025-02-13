@@ -83,7 +83,10 @@ async def single_sign_on_service(
     # Build the identity dictionary (you can include additional attributes if needed)
     identity = {
         "uid": [user_id],
-        "username": [user_id],
+        "username": [current_user.get("username")],
+        "email": [current_user.get("email")],
+        "first_name": [current_user.get("first_name")],
+        "last_name": [current_user.get("last_name")],
     }
 
     # Create a NameID object in the WindowsDomainQualifiedName format
