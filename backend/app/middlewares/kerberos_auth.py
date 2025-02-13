@@ -1,4 +1,4 @@
-# middlewares/kerberos_auth.py
+# middlewares/kerberos.py
 import logging
 import os
 import base64
@@ -15,7 +15,8 @@ class KerberosAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         logger.debug("Starting Kerberos authentication middleware dispatch.")
 
-        request.state.auth_info = {}
+        # Set default authentication info to None so that it's falsy.
+        request.state.auth_info = None
 
         auth_header = request.headers.get("Authorization")
         logger.debug(f"Authorization header: {auth_header}")
@@ -48,19 +49,20 @@ class KerberosAuthMiddleware(BaseHTTPMiddleware):
                     # Compute WindowsDomainQualifiedName:
                     if "@" in upn:
                         username, domain = upn.split("@", 1)
-                        # Optionally, you can use an environment variable for the short domain:
+                        # Optionally, use an environment variable for the short domain:
                         short_domain = os.getenv("KRB_WINDOWS_DOMAIN", domain.split('.')[0])
                         wdqn = f"{short_domain.upper()}\\{username}"
                     else:
                         wdqn = upn
 
-                    # Store all values in the auth_info dictionary
+                    # Store the authentication details in request.state.auth_info
                     request.state.auth_info = {
                         "upn": upn,
                         "wdqn": wdqn,
                     }
                     logger.info(f"Authentication complete. Auth info: {request.state.auth_info}")
                 else:
+                    # Authentication is not complete; send back token if available.
                     out_token_b64 = (
                         base64.b64encode(out_token).decode("ascii") if out_token else ""
                     )
@@ -72,9 +74,14 @@ class KerberosAuthMiddleware(BaseHTTPMiddleware):
             except Exception as e:
                 logger.error(f"Kerberos error: {e}")
                 logger.debug(traceback.format_exc())
+                return Response(
+                    status_code=401,
+                    headers={"WWW-Authenticate": "Negotiate"},
+                )
         else:
             logger.debug("No valid Negotiate Authorization header found.")
 
         response = await call_next(request)
         logger.debug("Exiting Kerberos authentication middleware dispatch.")
         return response
+    

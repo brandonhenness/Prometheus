@@ -1,5 +1,7 @@
 # main.py
 import logging
+import redis.asyncio as redis
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
@@ -7,15 +9,21 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.middlewares.kerberos_auth import KerberosAuthMiddleware
+from contextlib import asynccontextmanager
 
+from saml2.server import Server as Saml2IdPServer
+from saml2.config import IdPConfig
+
+# Import middlewares
+from app.middlewares.kerberos_auth import KerberosAuthMiddleware
+from app.middlewares.redis_session import RedisSessionMiddleware
+
+# Import routers
 from app.routers.saml import router as saml_router
 from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.items import router as items_router
 
-from saml2.server import Server as Saml2IdPServer
-from saml2.config import IdPConfig
 from app.saml_idp_config import IDP_CONFIG
 
 logging.basicConfig(level=logging.DEBUG)
@@ -24,6 +32,14 @@ logger = logging.getLogger(__name__)
 idp_config = IdPConfig()
 idp_config.load(IDP_CONFIG)
 saml_idp = Saml2IdPServer(config=idp_config)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create and attach a Redis client (with asyncio support) on startup
+    app.state.redis = redis.Redis.from_url("redis://redis:6379", decode_responses=True)
+    yield
+    # Close the Redis client on shutdown
+    await app.state.redis.close()
 
 app = FastAPI(
     docs_url=None,
@@ -49,14 +65,16 @@ app = FastAPI(
             "description": "Operations related to SAML2 Identity Provider",
         },
     ],
+    lifespan=lifespan,
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+app.add_middleware(RedisSessionMiddleware, cookie_name="session", max_age=3600)
 app.add_middleware(KerberosAuthMiddleware)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.prometheus.osn.wa.gov", "canvas.prometheus.osn.wa.gov"]) #TODO: Move to config
 
-app.include_router(auth_router, tags=["auth"])
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(users_router, tags=["users"])
 app.include_router(items_router, tags=["items"])
 app.include_router(saml_router, prefix="/saml", tags=["saml"])
