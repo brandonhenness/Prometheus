@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from contextlib import asynccontextmanager
@@ -73,9 +74,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(RedisSessionMiddleware, cookie_name="session", max_age=3600)
 app.add_middleware(KerberosAuthMiddleware)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.prometheus.osn.wa.gov", "canvas.prometheus.osn.wa.gov"]) #TODO: Move to config
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://prometheus.osn.wa.gov"], #TODO: Move to config
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(users_router, tags=["users"])
+app.include_router(users_router)
 app.include_router(items_router, tags=["items"])
 app.include_router(saml_router, prefix="/saml", tags=["saml"])
 

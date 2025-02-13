@@ -15,6 +15,7 @@ services:
       - WATCHPACK_POLLING=true
       - ENVIRONMENT=${ENVIRONMENT}
       - LOG_LEVEL=${LOG_LEVEL}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     networks:
       - prometheus-net
     restart: unless-stopped

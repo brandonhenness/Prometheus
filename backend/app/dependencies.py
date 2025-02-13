@@ -3,18 +3,19 @@ import os
 import logging
 import ldap3
 
-from fastapi import Request, HTTPException, status
+from fastapi import Request, HTTPException, status, Response
 
 logger = logging.getLogger(__name__)
 
 
-def get_current_user(request: Request) -> dict:
+def get_current_user(request: Request, response: Response) -> dict:
     """
     Combined dependency that accepts authentication via session or Kerberos.
     
     - If a session user is present, it uses that.
     - Otherwise, if Kerberos authentication info is available, it updates
       the session with the Kerberos user and uses that.
+    - Sets an HTTP cookie for frontend authentication.
     - If neither is present, it raises a 401 Unauthorized.
     """
     # Check for session-based authentication first.
@@ -23,17 +24,46 @@ def get_current_user(request: Request) -> dict:
         user = session.get("user")
         if user:
             logger.debug(f"Authenticated via session: {user}")
-            # You can return a simplified dictionary or full details.
-            return {"upn": user}
+            # Set the cookie so that the frontend recognizes the user.
+            response.set_cookie(
+                key="userAuth",
+                value=user,
+                httponly=True,
+                secure=True,
+                samesite="Lax",
+                domain=".prometheus.osn.wa.gov",  # TODO: Move this to a config/env var
+            )
+            return {
+                "upn": user,
+                "username": user.split("@")[0],
+                "email": user, # TODO: Get real user info from AD
+                "first_name": "DummyFirstName", # TODO: Get real user info from AD
+                "last_name": "DummyLastName", # TODO: Get real user info from AD
+            }
     
     # Fall back to Kerberos-based authentication.
     auth_info = getattr(request.state, "auth_info", None)
     if auth_info:
         logger.debug(f"Authenticated via Kerberos: {auth_info}")
-        # Optionally, update the session with Kerberos auth info for future requests.
+        user = auth_info.get("upn")
         if session is not None:
-            session["user"] = auth_info.get("upn")
-        return auth_info
+            session["user"] = user
+        # Set the cookie based on Kerberos authentication.
+        response.set_cookie(
+            key="userAuth",
+            value=user,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            domain=".prometheus.osn.wa.gov",  # TODO: Move this to a config/env var
+        )
+        return {
+            "upn": user,
+            "username": user.split("@")[0],
+            "email": user, # TODO: Get real user info from AD
+            "first_name": "DummyFirstName", # TODO: Get real user info from AD
+            "last_name": "DummyLastName", # TODO: Get real user info from AD
+        }
 
     logger.warning("Authentication required but no auth info found in session or Kerberos.")
     raise HTTPException(
