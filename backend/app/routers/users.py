@@ -1,6 +1,6 @@
 # routers/users.py
 from fastapi import APIRouter, Depends
-from app.dependencies import requires_auth
+from app.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -10,5 +10,5 @@ async def read_user(username: str):
 
 
 @router.get("/user")
-async def get_user(principal: str = Depends(requires_auth)):
+async def get_user(principal: str = Depends(get_current_user)):
     return {"username": principal}

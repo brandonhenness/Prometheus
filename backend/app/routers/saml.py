@@ -1,7 +1,7 @@
 # routers/saml.py
 import logging
 
-from fastapi import APIRouter, Request, Response, HTTPException, status
+from fastapi import APIRouter, Request, HTTPException, status, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from saml2.config import IdPConfig
 from saml2.server import Server as Saml2IdPServer
@@ -10,6 +10,7 @@ from saml2 import BINDING_HTTP_REDIRECT, BINDING_HTTP_POST
 from saml2.saml import NameID
 
 from app.saml_idp_config import IDP_CONFIG
+from app.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,9 @@ async def idp_metadata():
 
 @router.get("/sso")
 @router.post("/sso")
-async def single_sign_on_service(request: Request):
+async def single_sign_on_service(
+    request: Request, current_user: dict = Depends(get_current_user)
+):
     """
     IdP SingleSignOnService endpoint.
     Parses the AuthnRequest, ensures the user is authenticated via Kerberos,
@@ -73,18 +76,8 @@ async def single_sign_on_service(request: Request):
     if not req_info:
         return HTMLResponse("Unable to parse SAMLRequest.", status_code=400)
 
-    # Instead of checking request.state.principal, retrieve the full auth_info dictionary
-    auth_info = getattr(request.state, "auth_info", None)
-    if not auth_info or "upn" not in auth_info:
-        logger.warning("User not authenticated for SSO. Sending Kerberos challenge.")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Negotiate"},
-        )
-
     # Use the Windows Domain Qualified Name from the auth_info
-    user_id = auth_info["upn"]
+    user_id = current_user.get("upn")
     logger.debug(f"Using UPN for SAML response: {user_id}")
 
     # Build the identity dictionary (you can include additional attributes if needed)
