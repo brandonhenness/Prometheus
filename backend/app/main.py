@@ -12,9 +12,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from contextlib import asynccontextmanager
 
-from saml2.server import Server as Saml2IdPServer
-from saml2.config import IdPConfig
-
 # Import middlewares
 from app.middlewares.kerberos_auth import KerberosAuthMiddleware
 from app.middlewares.redis_session import RedisSessionMiddleware
@@ -25,14 +22,8 @@ from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.items import router as items_router
 
-from app.saml_idp_config import IDP_CONFIG
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-idp_config = IdPConfig()
-idp_config.load(IDP_CONFIG)
-saml_idp = Saml2IdPServer(config=idp_config)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,25 +64,23 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(RedisSessionMiddleware, cookie_name="session", max_age=3600)
 app.add_middleware(KerberosAuthMiddleware)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.prometheus.osn.wa.gov", "canvas.prometheus.osn.wa.gov"]) #TODO: Move to config
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.prometheus.osn.wa.gov", "canvas.prometheus.osn.wa.gov"])  # TODO: Move to config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://prometheus.osn.wa.gov"], #TODO: Move to config
+    allow_origins=["https://prometheus.osn.wa.gov"],  # TODO: Move to config
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(items_router, tags=["items"])
 app.include_router(saml_router, prefix="/saml", tags=["saml"])
 
-
 @app.get("/", include_in_schema=False)
 async def root_redirect():
     return RedirectResponse(url="/docs")
-
 
 @app.get("/docs", include_in_schema=False)
 async def custom_docs():
@@ -102,7 +91,6 @@ async def custom_docs():
         swagger_ui_parameters={"syntaxHighlight.theme": "monokai"},
     )
 
-
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
     return get_redoc_html(
@@ -110,7 +98,6 @@ async def redoc_html():
         title=app.title,
         redoc_js_url="/static/redoc.standalone.js",
     )
-
 
 @app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc: StarletteHTTPException):

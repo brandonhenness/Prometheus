@@ -2,6 +2,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
+import { CanvasCard } from "./card-canvas"
 import { CardBalance1 } from "./card-balance1";
 import { CardBalance2 } from "./card-balance2";
 import { CardBalance3 } from "./card-balance3";
@@ -25,6 +26,7 @@ export const Content = () => (
         <div className="flex flex-col gap-2">
           <h3 className="text-xl font-semibold">Available Balance</h3>
           <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
+            <CanvasCard />
             <CardBalance1 />
             <CardBalance2 />
             <CardBalance3 />

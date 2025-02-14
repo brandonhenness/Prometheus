@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.dependencies import get_current_user, get_user_permissions_from_ad
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/public")

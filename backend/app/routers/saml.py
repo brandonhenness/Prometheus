@@ -13,25 +13,41 @@ from app.saml_idp_config import IDP_CONFIG
 from app.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
-# 1) Build the IdP server at import time (or consider doing it on startup)
-idp_config = IdPConfig()
-idp_config.load(IDP_CONFIG)
-saml_idp = Saml2IdPServer(config=idp_config)
+# We'll use these globals for lazy initialization.
+_saml_idp = None
+_idp_config = None
 
+def get_saml_server() -> Saml2IdPServer:
+    """
+    Lazy-load the SAML IdP server.
+    If there's a problem loading the configuration or creating the server,
+    log the error and return None.
+    """
+    global _saml_idp, _idp_config
+    if _saml_idp is None:
+        try:
+            _idp_config = IdPConfig()
+            _idp_config.load(IDP_CONFIG)
+            _saml_idp = Saml2IdPServer(config=_idp_config)
+        except Exception as e:
+            logger.exception("Error initializing SAML IdP server. SAML functionality will be disabled.")
+            # Mark as disabled by setting to None (or you could set a flag)
+            _saml_idp = None
+    return _saml_idp
 
 @router.get("/metadata", include_in_schema=False)
 async def idp_metadata():
     """
-    (Optional) Endpoint to serve IdP metadata, so SPs can integrate.
-    You typically need to sign this metadata for production usage.
+    Endpoint to serve IdP metadata. If the SAML server is not available,
+    returns a 503 response.
     """
-    metadata_str = str(entity_descriptor(idp_config))
-
+    saml_idp = get_saml_server()
+    if saml_idp is None or _idp_config is None:
+        return HTMLResponse("SAML functionality currently unavailable.", status_code=503)
+    metadata_str = str(entity_descriptor(_idp_config))
     return HTMLResponse(content=metadata_str, status_code=200, media_type="text/xml")
-
 
 @router.get("/sso")
 @router.post("/sso")
@@ -40,9 +56,12 @@ async def single_sign_on_service(
 ):
     """
     IdP SingleSignOnService endpoint.
-    Parses the AuthnRequest, ensures the user is authenticated via Kerberos,
-    and then returns a signed SAMLResponse.
+    If the SAML server isn't available, returns a 503.
     """
+    saml_idp = get_saml_server()
+    if saml_idp is None:
+        return HTMLResponse("SAML functionality currently unavailable.", status_code=503)
+
     # Extract SAML parameters
     if request.method == "POST":
         form_data = await request.form()
@@ -76,11 +95,9 @@ async def single_sign_on_service(
     if not req_info:
         return HTMLResponse("Unable to parse SAMLRequest.", status_code=400)
 
-    # Use the Windows Domain Qualified Name from the auth_info
     user_id = current_user.get("upn")
     logger.debug(f"Using UPN for SAML response: {user_id}")
 
-    # Build the identity dictionary (you can include additional attributes if needed)
     identity = {
         "uid": [user_id],
         "username": [current_user.get("username")],
@@ -89,18 +106,15 @@ async def single_sign_on_service(
         "last_name": [current_user.get("last_name")],
     }
 
-    # Create a NameID object in the WindowsDomainQualifiedName format
     raw_nameid = NameID(
         text=user_id,
         format="urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName",
         name_qualifier=IDP_CONFIG["entityid"],
-        sp_name_qualifier="http://canvas.prometheus.osn.wa.gov/saml2", #TODO: Move this to a config
+        sp_name_qualifier="http://canvas.prometheus.osn.wa.gov/saml2",  # TODO: Move this to a config
     )
 
     try:
-        # Obtain response parameters (such as the destination URL)
         resp_args = saml_idp.response_args(req_info.message)
-        # Create the SAML AuthnResponse, passing our custom NameID via the 'name_id' parameter
         authn_resp = saml_idp.create_authn_response(
             identity=identity,
             userid=user_id,
@@ -109,7 +123,6 @@ async def single_sign_on_service(
             **resp_args
         )
 
-        # Apply the binding (Redirect or POST) to produce the proper HTTP response
         binding, destination = resp_args["binding"], resp_args["destination"]
         http_args = saml_idp.apply_binding(
             binding,
@@ -132,12 +145,10 @@ async def single_sign_on_service(
         logger.exception("Error creating or applying binding for AuthnResponse")
         return HTMLResponse("Internal SAML processing error.", status_code=500)
 
-
 @router.get("/slo")
 @router.post("/slo")
 async def single_logout_service(request: Request):
     """
-    (Optional) IdP SingleLogoutService endpoint.
-    The SP might send a LogoutRequest here to end the user's session.
+    IdP SingleLogoutService endpoint.
     """
-    return HTMLResponse("SLO endpoint not implemented.", status_code=501) #TODO: Implement this
+    return HTMLResponse("SLO endpoint not implemented.", status_code=501)  # TODO: Implement this
