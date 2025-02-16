@@ -9,13 +9,11 @@ services:
       - ../frontend:/app
       - /app/node_modules
       - /app/.next
-      - /app/public
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - ENVIRONMENT=${ENVIRONMENT}
       - LOG_LEVEL=${LOG_LEVEL}
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     networks:
       - prometheus-net
     restart: unless-stopped
@@ -24,32 +22,34 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    hostname: ${KRB_HOST}
     ports:
       - "8000:8000"
     volumes:
       - ../backend/app:/app/app
       - ../backend/static/swagger-ui-dark.css:/app/static/swagger-ui-dark.css:ro
       - /app/__pycache__
-      - ../krb5.keytab:/etc/krb5.keytab:ro
-      - ../krb5.conf:/etc/krb5.conf:ro
-      - ../idp-cert.pem:/etc/ssl//certs/idp-cert.pem:ro
-      - ../idp-key.pem:/etc/ssl/private/idp-key.pem:ro
-      - ../canvas-sp-cert.pem:/etc/ssl/certs/canvas-sp-cert.pem:ro
-      - ../ca-cert.pem:/etc/ssl/certs/ca-cert.pem:ro
+      - ../kerberos/krb5.keytab:${KRB_KTNAME}:ro
+      - ../kerberos/krb5.conf:${KRB5_CONFIG}:ro
+      - ../certs/idp-cert.pem:/etc/ssl//certs/idp-cert.pem:ro
+      - ../certs/idp-key.pem:/etc/ssl/private/idp-key.pem:ro
+      - ../certs/canvas-sp-cert.pem:/etc/ssl/certs/canvas-sp-cert.pem:ro
+      - ../certs/ca-chain.pem:/etc/ssl/certs/ca-chain.pem:ro
     environment:
       - KRB5_KTNAME=${KRB_KTNAME}
       - KRB5_CONFIG=${KRB5_CONFIG}
       - KRB5_TRACE=${KRB5_TRACE}
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=${DATABASE_URL}
-      - SERVICE_PRINCIPAL=${KRB_SERVICE}/${KRB_HOST}@${KRB_REALM}
+      - KRB_SERVICE=${KRB_SERVICE}
+      - KRB_HOST=${KRB_HOST}
+      - KRB_REALM=${KRB_REALM}
       - ENVIRONMENT=${ENVIRONMENT}
       - LOG_LEVEL=${LOG_LEVEL}
       - LDAP_SERVER=${LDAP_SERVER}
       - LDAP_USER=${LDAP_USER}
       - LDAP_PASSWORD=${LDAP_PASSWORD}
-      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-cert.pem
+      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-chain.pem
+      - FRONTEND_URL=${FRONTEND_URL}
     networks:
       - prometheus-net
     depends_on:
@@ -72,8 +72,8 @@ services:
       - ../canvas/cache_store.yml:/usr/src/app/config/cache_store.yml:ro
       - ../canvas/redis.yml:/usr/src/app/config/redis.yml:ro
       - ../canvas/saml.yml:/usr/src/app/config/saml.yml:ro
-      - ../canvas-saml.crt:/etc/ssl/certs/canvas-saml.crt:ro
-      - ../canvas-saml.key:/etc/ssl/private/canvas-saml.key:ro
+      - ../certs/canvas-sp-cert.pem:/etc/ssl/certs/canvas-sp-cert.pem:ro
+      - ../certs/canvas-sp-key.pem:/etc/ssl/private/canvas-sp-key.pem:ro
     environment:
       - CANVAS_PRODUCTION_DB=${CANVAS_PRODUCTION_DB}
       - CANVAS_DB_HOST=${CANVAS_DB_HOST}
@@ -143,11 +143,10 @@ services:
       context: ../nginx
       dockerfile: Dockerfile
     volumes:
-      - ../server.crt:/etc/nginx/certs/server.crt
-      - ../server.key:/etc/nginx/certs/server.key
+      - ../certs/nginx-cert.pem:/etc/ssl/certs/nginx-cert.pem
+      - ../certs/nginx-key.pem:/etc/ssl/private/nginx-key.pem
     environment:
       - FRONTEND_HOST_NAME=${FRONTEND_HOST_NAME}
-      - BACKEND_HOST_NAME=${BACKEND_HOST_NAME}
       - PGADMIN_HOST_NAME=${PGADMIN_HOST_NAME}
       - CANVAS_HOST_NAME=${CANVAS_HOST_NAME}
     ports:

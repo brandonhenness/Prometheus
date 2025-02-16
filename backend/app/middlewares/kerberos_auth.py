@@ -15,8 +15,12 @@ class KerberosAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         logger.debug("Starting Kerberos authentication middleware dispatch.")
 
-        # Set default authentication info to None so that it's falsy.
-        request.state.auth_info = None
+        # If the userAuth cookie is present, assume the user is authenticated
+        if request.cookies.get("userAuth"):
+            logger.debug("Valid userAuth cookie found, skipping Kerberos negotiation.")
+            response = await call_next(request)
+            logger.debug("Exiting Kerberos authentication middleware dispatch.")
+            return response
 
         auth_header = request.headers.get("Authorization")
         logger.debug(f"Authorization header: {auth_header}")

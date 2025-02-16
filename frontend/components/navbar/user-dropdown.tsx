@@ -9,38 +9,26 @@ import {
 import React, { useCallback } from "react";
 import { DarkModeSwitch } from "./darkmodeswitch";
 import { useRouter } from "next/navigation";
-import { deleteAuthCookie } from "@/actions/auth.action";
-import useSWR from "swr";
-
-// A simple fetcher function that includes credentials.
-const fetcher = (url: string) =>
-  fetch(url, { credentials: "include" }).then((res) => {
-    if (!res.ok) {
-      throw new Error(`An error occurred: ${res.statusText}`);
-    }
-    return res.json();
-  });
-
-// Use an environment variable for the external API URL.
-// Ensure NEXT_PUBLIC_API_URL is set in your .env file, e.g.:
-// NEXT_PUBLIC_API_URL=https://api.prometheus.osn.wa.gov
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { useAuth } from "@/contexts/AuthContext";
 
 export const UserDropdown = () => {
   const router = useRouter();
-
-  // Fetch the current user info from your backend API.
-  // The endpoint should return data like:
-  // { username, upn, email, first_name, last_name }
-  const { data: user } = useSWR(`${API_URL}/users/me`, fetcher);
-
-  // Use a fallback if user data is not yet available.
-  const displayUser = user || { username: "User", email: "" };
+  // Instead of using SWR to fetch user info, we use our AuthContext.
+  const { user } = useAuth();
 
   const handleLogout = useCallback(async () => {
-    await deleteAuthCookie();
-    window.location.href = `${API_URL}/auth/login`;
+    // Call your FastAPI logout endpoint which deletes the session cookie.
+    // Using a relative URL because everything is on the same domain now.
+    await fetch(`/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    // Then redirect to the login page; middleware will handle redirection as needed.
+    window.location.href = `/login`;
   }, []);
+
+  // Fallback display if user is not loaded yet.
+  const displayUser = user || { username: "User", email: "" };
 
   return (
     <Dropdown>

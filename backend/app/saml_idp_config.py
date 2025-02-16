@@ -4,7 +4,7 @@ from saml2 import BINDING_HTTP_REDIRECT
 
 IDP_CONFIG = {
     "debug": True,
-    "entityid": "https://api.prometheus.osn.wa.gov/saml/metadata",
+    "entityid": "https://prometheus.osn.wa.gov/api/saml/metadata",
     "service": {
         "idp": {
             "name_id_format": "urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName",
@@ -17,13 +17,13 @@ IDP_CONFIG = {
             "endpoints": {
                 "single_sign_on_service": [
                     (
-                        "https://api.prometheus.osn.wa.gov/saml/sso", 
+                        "https://prometheus.osn.wa.gov/api/saml/sso", 
                         BINDING_HTTP_REDIRECT,
                      ),
                 ],
                 "single_logout_service": [
                     (
-                        "https://api.prometheus.osn.wa.gov/saml/slo",
+                        "https://prometheus.osn.wa.gov/api/saml/slo",
                         BINDING_HTTP_REDIRECT,
                     ),
                 ],

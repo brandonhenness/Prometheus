@@ -13,7 +13,7 @@ from app.saml_idp_config import IDP_CONFIG
 from app.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/saml", tags=["saml"])
 
 # We'll use these globals for lazy initialization.
 _saml_idp = None

@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 # Import middlewares
 from app.middlewares.kerberos_auth import KerberosAuthMiddleware
 from app.middlewares.redis_session import RedisSessionMiddleware
+from app.middlewares.attach_cookie import AttachAuthCookieMiddleware
 
 # Import routers
 from app.routers.saml import router as saml_router
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI):
     await app.state.redis.close()
 
 app = FastAPI(
+    root_path="/api",
     docs_url=None,
     redoc_url=None,
     title="Prometheus API",
@@ -60,11 +62,28 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(RedisSessionMiddleware, cookie_name="session", max_age=3600)
 app.add_middleware(KerberosAuthMiddleware)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.prometheus.osn.wa.gov", "canvas.prometheus.osn.wa.gov"])  # TODO: Move to config
+app.add_middleware(AttachAuthCookieMiddleware)
+app.add_middleware( # TODO: Move to config
+    TrustedHostMiddleware,
+    allowed_hosts=[
+        "prometheus.osn.wa.gov",
+        "canvas.prometheus.osn.wa.gov",
+        "localhost",
+        "127.0.0.1",
+    ],
+)
+@app.middleware("http")
+async def log_host_header(request: Request, call_next):
+    host_header = request.headers.get("host")
+    logging.debug(f"Received Host header: {host_header}")
+    response = await call_next(request)
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://prometheus.osn.wa.gov"],  # TODO: Move to config
@@ -75,8 +94,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(users_router)
-app.include_router(items_router, tags=["items"])
-app.include_router(saml_router, prefix="/saml", tags=["saml"])
+app.include_router(items_router)
+app.include_router(saml_router)
 
 @app.get("/", include_in_schema=False)
 async def root_redirect():

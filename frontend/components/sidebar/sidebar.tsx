@@ -2,22 +2,28 @@ import React from "react";
 import { Sidebar } from "./sidebar.styles";
 import { Avatar, Tooltip } from "@nextui-org/react";
 import { CollegesDropdown } from "./colleges-dropdown";
+import { PrometheusLogo } from "../logos/prometheus-logo";
+
+// Dashboard & Core Icons
 import { HomeIcon } from "../icons/sidebar/home-icon";
-import { PaymentsIcon } from "../icons/sidebar/payments-icon";
-import { BalanceIcon } from "../icons/sidebar/balance-icon";
-import { AccountsIcon } from "../icons/sidebar/accounts-icon";
-import { CustomersIcon } from "../icons/sidebar/customers-icon";
-import { ProductsIcon } from "../icons/sidebar/products-icon";
-import { ReportsIcon } from "../icons/sidebar/reports-icon";
-import { DevIcon } from "../icons/sidebar/dev-icon";
-import { ViewIcon } from "../icons/sidebar/view-icon";
 import { SettingsIcon } from "../icons/sidebar/settings-icon";
-import { CollapseItems } from "./collapse-items";
+import { ChangeLogIcon } from "../icons/sidebar/changelog-icon";
+
+// New feature icons (placeholders)
+import { EducationIcon } from "../icons/sidebar/education-icon";
+import { DegreeIcon } from "../icons/sidebar/degree-icon";
+import { ScheduleIcon } from "../icons/sidebar/schedule-icon";
+import { TranscriptIcon } from "../icons/sidebar/transcript-icon";
+import { PlannerIcon } from "../icons/sidebar/planner-icon";
+import { LabIcon } from "../icons/sidebar/lab-icon";
+import { OfficeHoursIcon } from "../icons/sidebar/officehours-icon";
+import { AssetIcon } from "../icons/sidebar/asset-icon";
+import { ReentryIcon } from "../icons/sidebar/reentry-icon";
+import { CommunityIcon } from "../icons/sidebar/community-icon";
+
 import { SidebarItem } from "./sidebar-item";
 import { SidebarMenu } from "./sidebar-menu";
-import { FilterIcon } from "../icons/sidebar/filter-icon";
 import { useSidebarContext } from "../layout/layout-context";
-import { ChangeLogIcon } from "../icons/sidebar/changelog-icon";
 import { usePathname } from "next/navigation";
 
 export const SidebarWrapper = () => {
@@ -29,94 +35,134 @@ export const SidebarWrapper = () => {
       {collapsed ? (
         <div className={Sidebar.Overlay()} onClick={setCollapsed} />
       ) : null}
-      <div
-        className={Sidebar({
-          collapsed: collapsed,
-        })}
-      >
+      <div className={Sidebar({ collapsed })}>
+        <div className={`${Sidebar.Header()} mb-4`}>
+          {/* Prometheus Logo */}
+          <PrometheusLogo />
+        </div>
         <div className={Sidebar.Header()}>
+          {/* College Dropdown below the logo */}
           <CollegesDropdown />
         </div>
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>
+            {/* Dashboard */}
             <SidebarItem
-              title="Home"
+              title="Dashboard"
               icon={<HomeIcon />}
               isActive={pathname === "/"}
               href="/"
             />
-            <SidebarMenu title="Main Menu">
+
+            {/* Education Section */}
+            <SidebarMenu title="Education">
               <SidebarItem
-                isActive={pathname === "/accounts"}
-                title="Accounts"
-                icon={<AccountsIcon />}
-                href="accounts"
+                title="Learning Materials"
+                icon={<EducationIcon />}
+                isActive={pathname === "/learning-materials"}
+                href="/learning-materials"
               />
               <SidebarItem
-                isActive={pathname === "/payments"}
-                title="Payments"
-                icon={<PaymentsIcon />}
-              />
-              <CollapseItems
-                icon={<BalanceIcon />}
-                items={["Banks Accounts", "Credit Cards", "Loans"]}
-                title="Balances"
+                title="Degree Plans"
+                icon={<DegreeIcon />}
+                isActive={pathname === "/degree-plans"}
+                href="/degree-plans"
               />
               <SidebarItem
-                isActive={pathname === "/customers"}
-                title="Customers"
-                icon={<CustomersIcon />}
+                title="Course Schedule"
+                icon={<ScheduleIcon />}
+                isActive={pathname === "/course-schedule"}
+                href="/course-schedule"
               />
               <SidebarItem
-                isActive={pathname === "/products"}
-                title="Products"
-                icon={<ProductsIcon />}
+                title="Transcripts"
+                icon={<TranscriptIcon />}
+                isActive={pathname === "/transcripts"}
+                href="/transcripts"
               />
               <SidebarItem
-                isActive={pathname === "/reports"}
-                title="Reports"
-                icon={<ReportsIcon />}
+                title="Study Planner"
+                icon={<PlannerIcon />}
+                isActive={pathname === "/study-planner"}
+                href="/study-planner"
               />
             </SidebarMenu>
 
-            <SidebarMenu title="General">
+            {/* Scheduling Section */}
+            <SidebarMenu title="Scheduling">
               <SidebarItem
-                isActive={pathname === "/developers"}
-                title="Developers"
-                icon={<DevIcon />}
+                title="Computer Lab"
+                icon={<LabIcon />}
+                isActive={pathname === "/lab-scheduling"}
+                href="/lab-scheduling"
               />
               <SidebarItem
-                isActive={pathname === "/view"}
-                title="View Test Data"
-                icon={<ViewIcon />}
+                title="Office Hours"
+                icon={<OfficeHoursIcon />}
+                isActive={pathname === "/office-hours"}
+                href="/office-hours"
+              />
+            </SidebarMenu>
+
+            {/* Staff Tools Section */}
+            <SidebarMenu title="Staff Tools">
+              <SidebarItem
+                title="Asset Management"
+                icon={<AssetIcon />}
+                isActive={pathname === "/asset-management"}
+                href="/asset-management"
+              />
+            </SidebarMenu>
+
+            {/* Reentry Section */}
+            <SidebarMenu title="Reentry">
+              <SidebarItem
+                title="Reentry Resources"
+                icon={<ReentryIcon />}
+                isActive={pathname === "/reentry-resources"}
+                href="/reentry-resources"
               />
               <SidebarItem
-                isActive={pathname === "/settings"}
-                title="Settings"
+                title="Career Pathways"
+                icon={<ReentryIcon />}
+                isActive={pathname === "/career-pathways"}
+                href="/career-pathways"
+              />
+            </SidebarMenu>
+
+            {/* Community Section */}
+            <SidebarMenu title="Community">
+              <SidebarItem
+                title="News & Blogs"
+                icon={<CommunityIcon />}
+                isActive={pathname === "/community"}
+                href="/community"
+              />
+            </SidebarMenu>
+
+            {/* Settings & Updates */}
+            <SidebarMenu title="Settings">
+              <SidebarItem
+                title="App Settings"
                 icon={<SettingsIcon />}
+                isActive={pathname === "/settings"}
+                href="/settings"
               />
-            </SidebarMenu>
-
-            <SidebarMenu title="Updates">
               <SidebarItem
-                isActive={pathname === "/changelog"}
                 title="Changelog"
                 icon={<ChangeLogIcon />}
+                isActive={pathname === "/changelog"}
+                href="/changelog"
               />
             </SidebarMenu>
           </div>
           <div className={Sidebar.Footer()}>
-            <Tooltip content={"Settings"} color="primary">
+            <Tooltip content="Settings" color="primary">
               <div className="max-w-fit">
                 <SettingsIcon />
               </div>
             </Tooltip>
-            <Tooltip content={"Adjustments"} color="primary">
-              <div className="max-w-fit">
-                <FilterIcon />
-              </div>
-            </Tooltip>
-            <Tooltip content={"Profile"} color="primary">
+            <Tooltip content="Profile" color="primary">
               <Avatar
                 src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
                 size="sm"

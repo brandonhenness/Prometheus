@@ -5,6 +5,8 @@ import ldap3
 
 from fastapi import Request, HTTPException, status, Response
 
+from app.utils.cookies import set_user_auth_cookie
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,21 +27,14 @@ def get_current_user(request: Request, response: Response) -> dict:
         if user:
             logger.debug(f"Authenticated via session: {user}")
             # Set the cookie so that the frontend recognizes the user.
-            response.set_cookie(
-                key="userAuth",
-                value=user,
-                httponly=True,
-                secure=True,
-                samesite="Lax",
-                domain=".prometheus.osn.wa.gov",  # TODO: Move this to a config/env var
-            )
-            return {
+            request.state.user = {
                 "upn": user,
                 "username": user.split("@")[0],
                 "email": user, # TODO: Get real user info from AD
                 "first_name": "DummyFirstName", # TODO: Get real user info from AD
                 "last_name": "DummyLastName", # TODO: Get real user info from AD
             }
+            return request.state.user
     
     # Fall back to Kerberos-based authentication.
     auth_info = getattr(request.state, "auth_info", None)
@@ -49,21 +44,14 @@ def get_current_user(request: Request, response: Response) -> dict:
         if session is not None:
             session["user"] = user
         # Set the cookie based on Kerberos authentication.
-        response.set_cookie(
-            key="userAuth",
-            value=user,
-            httponly=True,
-            secure=True,
-            samesite="Lax",
-            domain=".prometheus.osn.wa.gov",  # TODO: Move this to a config/env var
-        )
-        return {
+        request.state.user = {
             "upn": user,
             "username": user.split("@")[0],
             "email": user, # TODO: Get real user info from AD
             "first_name": "DummyFirstName", # TODO: Get real user info from AD
             "last_name": "DummyLastName", # TODO: Get real user info from AD
         }
+        return request.state.user
 
     logger.warning("Authentication required but no auth info found in session or Kerberos.")
     raise HTTPException(

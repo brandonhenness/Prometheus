@@ -16,40 +16,18 @@ http {
         server pgadmin:80;
     }
 
-    # Main Production Frontend
+    # Main Production Frontend (Single Domain Approach)
     server {
         listen 443 ssl;
         server_name ${FRONTEND_HOST_NAME};
 
-        ssl_certificate     /etc/nginx/certs/server.crt;
-        ssl_certificate_key /etc/nginx/certs/server.key;
+        ssl_certificate     /etc/ssl/certs/nginx-cert.pem;
+        ssl_certificate_key /etc/ssl/private/nginx-key.pem;
         ssl_protocols       TLSv1.2 TLSv1.3;
         ssl_ciphers         HIGH:!aNULL:!MD5;
 
-        location / {
-            proxy_pass http://frontend;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-
-            # WebSocket support
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-        }
-    }
-
-    # Production Backend API
-    server {
-        listen 443 ssl;
-        server_name ${BACKEND_HOST_NAME};
-
-        ssl_certificate     /etc/nginx/certs/server.crt;
-        ssl_certificate_key /etc/nginx/certs/server.key;
-        ssl_protocols       TLSv1.2 TLSv1.3;
-        ssl_ciphers         HIGH:!aNULL:!MD5;
-
-        location / {
+        # Proxy API requests to the backend
+        location /api/ {
             proxy_pass http://backend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -57,24 +35,28 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header Authorization $http_authorization;
         }
-        
-        # Optional: explicitly forward documentation endpoints.
-        location /docs {
-            proxy_pass http://backend/docs;
-        }
-        
-        location /redoc {
-            proxy_pass http://backend/redoc;
+
+        # Serve all other requests with the frontend app
+        location / {
+            proxy_pass http://frontend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            
+            # WebSocket support (if needed)
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
         }
     }
 
-    # Canvas Service
+    # Canvas Service (unchanged)
     server {
         listen 443 ssl;
         server_name ${CANVAS_HOST_NAME};
 
-        ssl_certificate     /etc/nginx/certs/server.crt;
-        ssl_certificate_key /etc/nginx/certs/server.key;
+        ssl_certificate     /etc/ssl/certs/nginx-cert.pem;
+        ssl_certificate_key /etc/ssl/private/nginx-key.pem;
         ssl_protocols       TLSv1.2 TLSv1.3;
         ssl_ciphers         HIGH:!aNULL:!MD5;
 
@@ -87,13 +69,13 @@ http {
         }
     }
 
-    # PGAdmin Interface
+    # PGAdmin Interface (unchanged)
     server {
         listen 443 ssl;
         server_name ${PGADMIN_HOST_NAME};
 
-        ssl_certificate     /etc/nginx/certs/server.crt;
-        ssl_certificate_key /etc/nginx/certs/server.key;
+        ssl_certificate     /etc/ssl/certs/nginx-cert.pem;
+        ssl_certificate_key /etc/ssl/private/nginx-key.pem;
         ssl_protocols       TLSv1.2 TLSv1.3;
         ssl_ciphers         HIGH:!aNULL:!MD5;
 
@@ -109,7 +91,7 @@ http {
     # HTTP to HTTPS redirect for all services
     server {
         listen 80;
-        server_name ${FRONTEND_HOST_NAME} ${BACKEND_HOST_NAME} ${CANVAS_HOST_NAME} ${PGADMIN_HOST_NAME};
+        server_name ${FRONTEND_HOST_NAME} ${CANVAS_HOST_NAME} ${PGADMIN_HOST_NAME};
         return 301 https://$host$request_uri;
     }
 

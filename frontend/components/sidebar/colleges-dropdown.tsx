@@ -9,6 +9,7 @@ import {
 import React, { useState } from "react";
 import { AcmeIcon } from "../icons/acme-icon";
 import { AcmeLogo } from "../icons/acmelogo";
+import { GHCIcon } from "../icons/ghc-icon";
 import { BottomIcon } from "../icons/sidebar/bottom-icon";
 
 interface College {
@@ -20,24 +21,37 @@ interface College {
 export const CollegesDropdown = () => {
   const [college, setCollege] = useState<College>({
     name: "Grays Harbor College",
-    location: "Aberdeen, WA",
-    logo: <AcmeIcon />,
+    location: "SCCC Aberdeen, WA",
+    logo: <GHCIcon />,
   });
 
+  // A helper to wrap logos so they remain a fixed size.
+  const LogoWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="w-8 h-8 flex-shrink-0">{children}</div>
+  );
+
   return (
-    <Dropdown classNames={{ base: "w-full min-w-[320px]" }}>
+    // Use full width for the dropdown so it scales with its container
+    <Dropdown classNames={{ base: "w-full" }}>
       <DropdownTrigger className="cursor-pointer">
-        <div className="flex items-center gap-2">
-          {college.logo}
-          <div className="flex flex-col gap-1">
-            <h3 className="text-xl font-medium m-0 text-default-900">
+        <div className="flex items-center gap-2 w-full">
+          {/* Logo stays fixed size */}
+          <div className="flex-shrink-0">
+            <LogoWrapper>{college.logo}</LogoWrapper>
+          </div>
+          {/* Text container is allowed to shrink */}
+          <div className="flex-grow min-w-0">
+            <h3 className="text-xl font-medium m-0 text-default-900 truncate">
               {college.name}
             </h3>
-            <span className="text-xs font-medium text-default-500">
+            <span className="text-xs font-medium text-default-500 truncate">
               {college.location}
             </span>
           </div>
-          <BottomIcon />
+          {/* Chevron is fixed so it never shrinks */}
+          <div className="flex-shrink-0">
+            <BottomIcon />
+          </div>
         </div>
       </DropdownTrigger>
       <DropdownMenu
@@ -45,8 +59,8 @@ export const CollegesDropdown = () => {
           if (key === "1") {
             setCollege({
               name: "Grays Harbor College",
-              location: "Aberdeen, WA",
-              logo: <AcmeIcon />,
+              location: "SCCC Aberdeen, WA",
+              logo: <GHCIcon />,
             });
           }
           if (key === "2") {
@@ -76,44 +90,44 @@ export const CollegesDropdown = () => {
         <DropdownSection title="Colleges">
           <DropdownItem
             key="1"
-            startContent={<AcmeIcon />}
-            description="Aberdeen, WA"
+            startContent={<LogoWrapper><GHCIcon /></LogoWrapper>}
+            description="SCCC Aberdeen, WA"
             classNames={{
               base: "py-4",
-              title: "text-base font-semibold",
+              title: "text-base font-semibold truncate",
             }}
           >
             Grays Harbor College
           </DropdownItem>
           <DropdownItem
             key="2"
-            startContent={<AcmeLogo />}
+            startContent={<LogoWrapper><AcmeLogo /></LogoWrapper>}
             description="Bremerton, WA"
             classNames={{
               base: "py-4",
-              title: "text-base font-semibold",
+              title: "text-base font-semibold truncate",
             }}
           >
             Olympic College
           </DropdownItem>
           <DropdownItem
             key="3"
-            startContent={<AcmeIcon />}
+            startContent={<LogoWrapper><AcmeIcon /></LogoWrapper>}
             description="Seattle, WA"
             classNames={{
               base: "py-4",
-              title: "text-base font-semibold",
+              title: "text-base font-semibold truncate",
             }}
           >
             Seattle Central College
           </DropdownItem>
           <DropdownItem
             key="4"
-            startContent={<AcmeIcon />}
+            startContent={<LogoWrapper><AcmeIcon /></LogoWrapper>}
             description="Tacoma, WA"
             classNames={{
               base: "py-4",
-              title: "text-base font-semibold",
+              title: "text-base font-semibold truncate",
             }}
           >
             Tacoma Community College

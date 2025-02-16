@@ -4,7 +4,7 @@
 # openssl req -new -newkey rsa:2048 -days 730 -nodes -x509 -keyout samlkey.pem -out samlcert.pem
 
 production: #TODO: Update this to use environment variables
-  entity_id: "http://api.prometheus.osn.wa.gov/saml/metadata"
+  entity_id: "http://prometheus.osn.wa.gov/api/saml/metadata"
   tech_contact_name: "Administrator"
   tech_contact_email: "admin@osn.wa.gov"
   encryption:

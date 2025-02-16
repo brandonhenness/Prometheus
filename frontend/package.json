@@ -11,7 +11,7 @@
   "dependencies": {
     "@nextui-org/react": "2.0.22",
     "@swc/helpers": "^0.5.15",
-    "apexcharts": "^3.35.5",
+    "apexcharts": "^4.4.0",
     "clsx": "^2.0.0",
     "formik": "^2.4.6",
     "framer-motion": "^10.16.0",
