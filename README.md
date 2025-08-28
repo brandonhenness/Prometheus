@@ -147,4 +147,3 @@ Prometheus is licensed under the [GNU General Public License v3.0](LICENSE).
 ---
 
 Developed with ❤️ by [Brandon Henness](https://github.com/brandonhenness).
-```
